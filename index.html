@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recipe Recommendation App</title>
+    <style>
+        /* --- Base Reset & Mobile Container --- */
+        :root {
+            --bg-color: #F0F0F0;
+            --text-color: #333;
+            --card-bg: #EAEAEA;
+            --pill-bg: #FFFFFF;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f9f9f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: var(--text-color);
+        }
+
+        /* Simulates a phone screen */
+        .mobile-container {
+            width: 375px; /* A standard mobile width */
+            height: 812px; /* A standard mobile height */
+            background-color: var(--bg-color);
+            border-radius: 36px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden; /* Important for dynamic content */
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- Header & Navigation --- */
+        .header {
+            background-color: var(--pill-bg);
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .header-icon {
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        /* --- Input Section: Level and Ingredients --- */
+        .input-section {
+            padding: 20px;
+            flex-grow: 1; /* Main content grows to fill space */
+            overflow-y: auto; /* Allow scrolling if list is long */
+        }
+
+        .level-card {
+            background-color: black;
+            color: white;
+            border-radius: 20px;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .level-text {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        /* Dynamic dropdown for skill level */
+        .level-select-container {
+            position: relative;
+        }
+
+        select#skill-level {
+            background-color: #ddd;
+            color: #333;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            appearance: none; /* Hide default arrow */
+            -webkit-appearance: none;
+            padding-right: 32px; /* Space for custom arrow */
+        }
+
+        .level-select-container::after {
+            content: '\25BC'; /* Unicode arrow down */
+            font-size: 10px;
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #555;
+            pointer-events: none; /* Let clicks pass through to select */
+        }
+
+        /* Ingredients List */
+        .ingredients-card {
+            background-color: var(--card-bg);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .ingredients-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .ingredient-list {
+            list-style: none;
+        }
+
+        .ingredient-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            cursor: pointer;
+        }
+
+        .ingredient-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .ingredient-item input[type="checkbox"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #555;
+            border-radius: 4px;
+            margin-right: 12px;
+            background-color: #E6E6E6;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .ingredient-item input[type="checkbox"]:checked {
+            background-color: #555;
+            border-color: #555;
+        }
+
+        .ingredient-item input[type="checkbox"]:checked::after {
+            content: '✔';
+            color: white;
+            font-size: 14px;
+        }
+
+        .ingredient-label {
+            font-size: 1rem;
+            font-weight: 400;
+        }
+
+        /* --- Recommendations Section --- */
+        .recommendations-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        #recommendations-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .recipe-card {
+            background-color: var(--card-bg);
+            border-radius: 20px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .recipe-card:hover {
+            background-color: #e0e0e0;
+        }
+
+        .recipe-image {
+            width: 80px;
+            height: 80px;
+            border-radius: 12px;
+            object-fit: cover;
+            margin-right: 16px;
+            background-color: #ccc; /* Placeholder while images load */
+        }
+
+        .recipe-details {
+            flex-grow: 1;
+        }
+
+        .recipe-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .recipe-description {
+            font-size: 0.9rem;
+            font-weight: 400;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="mobile-container">
+        <div class="header">
+            <span class="header-icon">&lsaquo;</span>
+            <h1>Recommendation</h1>
+            <span class="header-icon">&#9776;</span>
+        </div>
+
+        <div class="input-section">
+
+            <div class="level-card">
+                <span class="level-text">For</span>
+                <div class="level-select-container">
+                    <select id="skill-level">
+                        <option value="beginner" selected>Beginner</option>
+                        <option value="intermediate">Intermediate</option>
+                        <option value="advanced">Advanced</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="ingredients-card">
+                <div class="ingredients-title">Ingredients I have</div>
+                <ul class="ingredient-list">
+                    </ul>
+            </div>
+
+            <div class="recommendations-container">
+                <div class="recommendations-title">Recommended Recipes</div>
+                <div id="recommendations-list">
+                    </ul>
+            </div>
+
+        </div> </div> <script>
+        // 1. Data Definitions
+        const ingredientsData = [
+            'Carrot', 'Onion', 'Tomato', 'Pasta', 'Water', 'Salt', 'Soy sauce'
+        ];
+
+        // Each recipe is linked to required ingredients and minimum skill levels
+        const allRecipes = [
+            {
+                id: 1,
+                title: 'Tomato soup',
+                description: 'Simple quick and easy!',
+                image: 'tomato-soup.jpg',
+                ingredientsRequired: ['Carrot', 'Onion', 'Tomato', 'Water', 'Salt'],
+                skillRequired: 'beginner'
+            },
+            {
+                id: 2,
+                title: 'Basic Pasta',
+                description: 'A few ingredients, one pan!',
+                image: 'basic-pasta.jpg',
+                ingredientsRequired: ['Pasta', 'Onion', 'Tomato', 'Water', 'Salt'],
+                skillRequired: 'beginner'
+            },
+            {
+                id: 3,
+                title: 'Stir-fry Noodles',
+                description: 'Quick wok dish.',
+                image: 'stir-fry.jpg',
+                ingredientsRequired: ['Noodles', 'Carrot', 'Onion', 'Soy sauce'],
+                skillRequired: 'intermediate'
+            },
+            {
+                id: 4,
+                title: 'Gourmet Hamburger',
+                description: 'A classic, elevated!',
+                image: 'hamburger.jpg',
+                ingredientsRequired: ['Buns', 'Beef Patty', 'Tomato', 'Onion'],
+                skillRequired: 'intermediate'
+            }
+        ];
+
+        // 2. DOM Element Selectors
+        const skillSelect = document.getElementById('skill-level');
+        const ingredientListEl = document.querySelector('.ingredient-list');
+        const recommendationsListEl = document.getElementById('recommendations-list');
+
+        // 3. Helper Functions
+
+        // a. Generate HTML for an ingredient item
+        function createIngredientItem(name) {
+            return `
+                <li class="ingredient-item">
+                    <input type="checkbox" id="check-${name}" value="${name}">
+                    <label for="check-${name}" class="ingredient-label">${name}</label>
+                </li>
+            `;
+        }
+
+        // b. Generate HTML for a recipe card
+        function createRecipeCard(recipe) {
+            return `
+                <div class="recipe-card">
+                    <img src="${recipe.image}" alt="${recipe.title}" class="recipe-image">
+                    <div class="recipe-details">
+                        <div class="recipe-title">${recipe.title}</div>
+                        <div class="recipe-description">${recipe.description}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // c. Check if user has all required ingredients for a recipe
+        function checkIngredients(requiredList) {
+            const checkedCheckboxes = document.querySelectorAll('.ingredient-item input[type="checkbox"]:checked');
+            const checkedIngredients = Array.from(checkedCheckboxes).map(cb => cb.value);
+            return requiredList.every(ingredient => checkedIngredients.includes(ingredient));
+        }
+
+        // d. Check if skill level is suitable (simulated logic)
+        function checkSkillMatch(recipeSkill, userSkill) {
+            // Simplified: Beginner only shows beginner. 
+            // Better logic would be "less than or equal to".
+            if (userSkill === 'beginner' && recipeSkill === 'beginner') return true;
+            if (userSkill === 'intermediate' && recipeSkill !== 'advanced') return true;
+            if (userSkill === 'advanced') return true;
+            return false;
+        }
+
+        // 4. Main Core Logic: Dynamic Update
+
+        function updateRecommendations() {
+            // Clear current list
+            recommendationsListEl.innerHTML = '';
+
+            const userSkill = skillSelect.value;
+            let count = 0;
+
+            // Filter and display recipes
+            allRecipes.forEach(recipe => {
+                const hasIngredients = checkIngredients(recipe.ingredientsRequired);
+                const skillMatches = checkSkillMatch(recipe.skillRequired, userSkill);
+
+                if (hasIngredients && skillMatches) {
+                    recommendationsListEl.innerHTML += createRecipeCard(recipe);
+                    count++;
+                }
+            });
+
+            if (count === 0) {
+                recommendationsListEl.innerHTML = '<div class="recipe-description">No recipes found based on your ingredients and skill level. Try selecting more ingredients!</div>';
+            }
+        }
+
+        // 5. Initial Setup and Event Listeners
+
+        // Populate the ingredients list initially
+        ingredientListEl.innerHTML = ingredientsData.map(name => createIngredientItem(name)).join('');
+
+        // Pre-check the original ingredients for immediate display
+        const defaultChecks = ['Carrot', 'Onion', 'Tomato', 'Pasta', 'Water', 'Salt', 'Soy sauce'];
+        defaultChecks.forEach(item => {
+            const checkbox = document.getElementById(`check-${item}`);
+            if (checkbox) checkbox.checked = true;
+        });
+
+        // Setup event listeners for immediate interaction
+        skillSelect.addEventListener('change', updateRecommendations);
+        
+        // Add listeners to all checkboxes
+        const allCheckboxes = document.querySelectorAll('.ingredient-item input[type="checkbox"]');
+        allCheckboxes.forEach(cb => {
+            cb.addEventListener('change', updateRecommendations);
+        });
+
+        // Run an initial update to show default recipes
+        updateRecommendations();
+
+    </script>
+</body>
+</html>
